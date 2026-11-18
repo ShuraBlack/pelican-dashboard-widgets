@@ -15,8 +15,13 @@ class SystemOverviewWidget extends StatsOverviewWidget
 
     protected ?string $heading = 'System';
 
-    // Node checks call Wings (cached 30 s by Pelican), so no need to poll every 5 s.
-    protected ?string $pollingInterval = '30s';
+    // Configurable in the plugin settings (default 30 s); node checks are cached 30 s by Pelican anyway.
+    protected function getPollingInterval(): ?string
+    {
+        $seconds = DashboardWidgetsPlugin::refreshSeconds();
+
+        return $seconds ? "{$seconds}s" : null;
+    }
 
     public static function canView(): bool
     {

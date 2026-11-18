@@ -10,7 +10,7 @@ class EggUpdatesWidget extends Widget
 {
     protected static ?int $sort = 2;
 
-    protected string $view = 'dashboard-widgets::update-list';
+    protected string $view = 'dashboard-widgets::list';
 
     public static function canView(): bool
     {
@@ -28,7 +28,7 @@ class EggUpdatesWidget extends Widget
                 ->withCount('servers')
                 ->get()
                 ->filter(fn (Egg $egg) => cache()->get("eggs.$egg->uuid.update", false))
-                ->map(fn (Egg $egg) => ['name' => $egg->name, 'detail' => trans_choice(':count server|:count servers', $egg->servers_count)])
+                ->map(fn (Egg $egg) => ['name' => $egg->name, 'detail' => trans_choice(':count server|:count servers', $egg->servers_count), 'badge' => ['Update available', 'warning']])
                 ->values(),
             'empty' => 'All eggs with an update URL are up to date.',
             'url' => DashboardWidgetsPlugin::url('App\Filament\Admin\Resources\Eggs\EggResource'),

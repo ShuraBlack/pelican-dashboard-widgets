@@ -3,7 +3,7 @@
     "name": "Dashboard Widgets",
     "author": "ShuraBlack",
     "version": "1.0.0",
-    "description": "Extra admin dashboard widgets: system overview, plugin updates, notes and recent activity.",
+    "description": "Extra admin dashboard widgets, a custom heading and header links.",
     "category": "plugin",
     "url": null,
     "update_url": null,

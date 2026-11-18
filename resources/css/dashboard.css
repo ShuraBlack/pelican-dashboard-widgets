@@ -3,7 +3,7 @@
    Structure: dashboard grid > column wrapper > widget. */
 
 @media (min-width: 768px) {
-    /* Two columns; every widget spans both unless it is part of a pair below. */
+    /* Two columns; every widget spans both unless set to half width (rules added by the plugin). */
     .fi-sc:has(> * > [wire\:name$="Admin\\Widgets\\SupportWidget"]) {
         display: grid !important;
         grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
@@ -19,12 +19,6 @@
     .fi-sc > :has(> :is([wire\:name$="Admin\\Widgets\\SupportWidget"], [wire\:name$="Admin\\Widgets\\HelpWidget"])) {
         grid-column: auto !important;
     }
-
-    /* Plugin + egg updates: side by side, but only when both are shown. */
-    .fi-sc:has(> * > [wire\:name$="\\PluginUpdatesWidget"]):has(> * > [wire\:name$="\\EggUpdatesWidget"])
-        > :has(> :is([wire\:name$="\\PluginUpdatesWidget"], [wire\:name$="\\EggUpdatesWidget"])) {
-        grid-column: auto !important;
-    }
 }
 
 /* Compact support/help cards */
@@ -35,4 +29,10 @@
 :is([wire\:name$="Admin\\Widgets\\SupportWidget"], [wire\:name$="Admin\\Widgets\\HelpWidget"]) .fi-section-content {
     padding: 0.75rem 1rem !important;
     font-size: 0.875rem;
+}
+
+/* Custom heading: hide Pelican's original heading and description that follow ours. */
+.dw-heading ~ .fi-header-heading:not(.dw-heading),
+.dw-heading ~ .fi-header-subheading:not(.dw-heading) {
+    display: none !important;
 }
