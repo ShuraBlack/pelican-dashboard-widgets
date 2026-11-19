@@ -1,4 +1,4 @@
-{{-- Shared list card: plugin/egg updates, backups, schedules. Items: name, detail, optional badge [text, color]. --}}
+{{-- Shared list card for the list widgets. Items: name, detail, optional badge [text, color] and url. --}}
 <x-filament-widgets::widget>
     <x-filament::section :icon="$icon" :heading="$heading" :description="$description ?? null">
         @if ($url)
@@ -14,7 +14,14 @@
             <div tabindex="0" style="max-height: 15rem; overflow-y: auto; padding-right: 0.5rem;">
                 @foreach ($items as $item)
                     <div style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.25rem 0;">
-                        <span>{{ $item['name'] }} <span style="opacity: 0.6;">{{ $item['detail'] }}</span></span>
+                        <span>
+                            @if ($item['url'] ?? null)
+                                <x-filament::link :href="$item['url']">{{ $item['name'] }}</x-filament::link>
+                            @else
+                                {{ $item['name'] }}
+                            @endif
+                            <span style="opacity: 0.6;">{{ $item['detail'] }}</span>
+                        </span>
                         @isset($item['badge'])
                             <x-filament::badge :color="$item['badge'][1]">{{ $item['badge'][0] }}</x-filament::badge>
                         @endisset

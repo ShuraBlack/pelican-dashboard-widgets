@@ -3,6 +3,7 @@
 namespace ShuraBlack\DashboardWidgets;
 
 use App\Contracts\Plugins\HasPluginSettings;
+use App\Models\Server;
 use App\Services\Helpers\SoftwareVersionService;
 use App\Traits\EnvironmentWriterTrait;
 use Filament\Contracts\Plugin;
@@ -14,16 +15,24 @@ use Filament\Notifications\Notification;
 use Filament\Panel;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Tabs;
+use Filament\Schemas\Components\Tabs\Tab;
+use Filament\Schemas\Components\Text;
 use Filament\View\PanelsRenderHook;
 use ShuraBlack\DashboardWidgets\Widgets\ActivityWidget;
+use ShuraBlack\DashboardWidgets\Widgets\AllocationsWidget;
 use ShuraBlack\DashboardWidgets\Widgets\BackupsWidget;
 use ShuraBlack\DashboardWidgets\Widgets\EggUpdatesWidget;
+use ShuraBlack\DashboardWidgets\Widgets\FailedJobsWidget;
 use ShuraBlack\DashboardWidgets\Widgets\NodeCapacityWidget;
 use ShuraBlack\DashboardWidgets\Widgets\NodeDetailsWidget;
 use ShuraBlack\DashboardWidgets\Widgets\NotesWidget;
 use ShuraBlack\DashboardWidgets\Widgets\PluginUpdatesWidget;
+use ShuraBlack\DashboardWidgets\Widgets\ProblemServersWidget;
+use ShuraBlack\DashboardWidgets\Widgets\RecentServersWidget;
 use ShuraBlack\DashboardWidgets\Widgets\SchedulesWidget;
 use ShuraBlack\DashboardWidgets\Widgets\SystemOverviewWidget;
+use ShuraBlack\DashboardWidgets\Widgets\TransfersWidget;
 use ShuraBlack\DashboardWidgets\Widgets\UsersWidget;
 use Throwable;
 
@@ -31,18 +40,23 @@ class DashboardWidgetsPlugin implements HasPluginSettings, Plugin
 {
     use EnvironmentWriterTrait;
 
-    /** setting key => [label, widget class]; this is also the default order */
+    /** setting key => [label, widget class, settings group]; this is also the default order */
     private const WIDGETS = [
-        'system' => ['System overview', SystemOverviewWidget::class],
-        'node_details' => ['Node details', NodeDetailsWidget::class],
-        'node_capacity' => ['Node capacity', NodeCapacityWidget::class],
-        'users' => ['Users & security', UsersWidget::class],
-        'plugin_updates' => ['Plugin updates', PluginUpdatesWidget::class],
-        'egg_updates' => ['Egg updates', EggUpdatesWidget::class],
-        'backups' => ['Backups', BackupsWidget::class],
-        'schedules' => ['Schedules', SchedulesWidget::class],
-        'notes' => ['Notes', NotesWidget::class],
-        'activity' => ['Recent activity', ActivityWidget::class],
+        'system' => ['System overview', SystemOverviewWidget::class, 'Overview'],
+        'node_details' => ['Node details', NodeDetailsWidget::class, 'Nodes'],
+        'node_capacity' => ['Node capacity', NodeCapacityWidget::class, 'Nodes'],
+        'allocations' => ['Free allocations', AllocationsWidget::class, 'Nodes'],
+        'users' => ['Users & security', UsersWidget::class, 'Overview'],
+        'problem_servers' => ['Servers needing attention', ProblemServersWidget::class, 'Servers'],
+        'recent_servers' => ['Newest servers', RecentServersWidget::class, 'Servers'],
+        'plugin_updates' => ['Plugin updates', PluginUpdatesWidget::class, 'Maintenance'],
+        'egg_updates' => ['Egg updates', EggUpdatesWidget::class, 'Maintenance'],
+        'backups' => ['Backups', BackupsWidget::class, 'Servers'],
+        'schedules' => ['Schedules', SchedulesWidget::class, 'Servers'],
+        'transfers' => ['Server transfers', TransfersWidget::class, 'Servers'],
+        'failed_jobs' => ['Failed jobs', FailedJobsWidget::class, 'Maintenance'],
+        'notes' => ['Notes', NotesWidget::class, 'Overview'],
+        'activity' => ['Recent activity', ActivityWidget::class, 'Overview'],
     ];
 
     private const REFRESH = ['10' => 'Every 10 seconds', '30' => 'Every 30 seconds', '60' => 'Every minute', '0' => 'Off'];
@@ -85,10 +99,16 @@ class DashboardWidgetsPlugin implements HasPluginSettings, Plugin
         return ((int) config('dashboard-widgets.refresh', 30)) ?: null;
     }
 
-    /** URL of a Pelican page or resource, or null if Pelican renamed it. */
-    public static function url(string $class): ?string
+    /** URL of a Pelican page or resource, or null if Pelican renamed it. Arguments go to getUrl(). */
+    public static function url(string $class, mixed ...$arguments): ?string
     {
-        return class_exists($class) ? $class::getUrl() : null;
+        return class_exists($class) ? $class::getUrl(...$arguments) : null;
+    }
+
+    /** Admin page of a server: edit if allowed, otherwise view. */
+    public static function serverUrl(Server $server): ?string
+    {
+        return self::url('App\Filament\Admin\Resources\Servers\ServerResource', user()?->can('update', $server) ? 'edit' : 'view', ['record' => $server]);
     }
 
     private static function css(): string
@@ -158,8 +178,19 @@ class DashboardWidgetsPlugin implements HasPluginSettings, Plugin
 
     public function getSettingsForm(): array
     {
-        return [
-            Section::make('Page')->schema([
+        // One collapsed section per group keeps the widget list short as widgets are added.
+        $groups = collect(self::WIDGETS)->groupBy(fn (array $widget) => $widget[2], preserveKeys: true)->map(
+            fn ($widgets, string $group) => Section::make($group)->collapsible()->collapsed()->schema($widgets->keys()->map(
+                fn (string $key) => Grid::make(3)->schema([
+                    Toggle::make("widgets.$key.enabled")->label(self::WIDGETS[$key][0])->inline(false),
+                    Select::make("widgets.$key.width")->label('Width')->options(['full' => 'Full', 'half' => 'Half'])->selectablePlaceholder(false),
+                    TextInput::make("widgets.$key.order")->label('Order')->integer()->minValue(1)->maxValue(999),
+                ]),
+            )->all()),
+        );
+
+        return [Tabs::make('Settings')->tabs([
+            Tab::make('Page')->icon('tabler-layout-navbar')->schema([
                 TextInput::make('heading')->label('Heading')->maxLength(150)
                     ->helperText('Empty = Pelican\'s heading. Placeholders: {greeting}, {user}, {app}, {version}'),
                 TextInput::make('subheading')->label('Description')->maxLength(300)
@@ -171,22 +202,16 @@ class DashboardWidgetsPlugin implements HasPluginSettings, Plugin
                 Toggle::make('hide_canary')->label('Hide Pelican\'s canary build notice')
                     ->helperText('"Support Pelican" and "Need help?" always stay.'),
             ]),
-            Section::make('Widgets')
-                ->description('Order: lower numbers come first; empty = default (10, 20, 30 …).')
-                ->schema(array_map(
-                    fn (string $key) => Grid::make(3)->schema([
-                        Toggle::make("widgets.$key.enabled")->label(self::WIDGETS[$key][0])->inline(false),
-                        Select::make("widgets.$key.width")->label('Width')->options(['full' => 'Full', 'half' => 'Half'])->selectablePlaceholder(false),
-                        TextInput::make("widgets.$key.order")->label('Order')->integer()->minValue(1)->maxValue(999),
-                    ]),
-                    array_keys(self::WIDGETS),
-                )),
-            Section::make('Live widgets')->schema([
+            Tab::make('Widgets')->icon('tabler-layout-dashboard')->schema([
+                Text::make('Order: lower numbers come first across all groups; empty = default (10, 20, 30 … in the README order).'),
+                ...$groups->values()->all(),
+            ]),
+            Tab::make('Live widgets')->icon('tabler-refresh')->schema([
                 Select::make('refresh')->label('Refresh system overview and node details')->options(self::REFRESH)->selectablePlaceholder(false),
                 Toggle::make('panel_host')->label('Show the panel server in node details')
                     ->helperText('CPU, memory, swap and disk of the machine the panel runs on (Linux). Only for admins with "view health".'),
             ]),
-        ];
+        ])];
     }
 
     public function saveSettings(array $data): void
