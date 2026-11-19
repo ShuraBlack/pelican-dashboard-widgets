@@ -98,10 +98,10 @@ class DashboardWidgetsPlugin implements HasPluginSettings, Plugin
         // Widgets set to half width, matched by the end of their class name in wire:name (backslash doubled for CSS).
         $half = collect(self::WIDGETS)
             ->filter(fn (array $widget, string $key) => config("dashboard-widgets.widgets.$key.width") === 'half')
-            ->map(fn (array $widget) => '.fi-sc > :has(> [wire\:name$="\\\\' . class_basename($widget[1]) . '"])')
+            ->map(fn (array $widget) => '.fi-sc > * > [wire\:name$="\\\\' . class_basename($widget[1]) . '"]')
             ->implode(',');
         if ($half !== '') {
-            $css .= "@media (min-width: 768px) { $half { grid-column: auto !important; } }";
+            $css .= "@media (min-width: 768px) { $half { grid-column: span 3 !important; } }";
         }
 
         if (config('dashboard-widgets.hide_canary')) {

@@ -17,7 +17,7 @@ Extra widgets for the Pelican admin dashboard, a custom heading, header links an
 | Notes | Shared notes for the whole admin team | Any dashboard access |
 | Recent activity | The last 8 activity log entries | `view activityLog` |
 
-Server, node, backup and schedule numbers only count nodes the admin is allowed to access, the same as Pelican's own lists. Pelican's "Support Pelican" and "Need help?" always stay at the bottom, side by side.
+Server, node, backup and schedule numbers only count nodes the admin is allowed to access, the same as Pelican's own lists. Pelican's update notice, "Support Pelican" and "Need help?" always sit at the top in one row of three.
 
 ## Settings
 

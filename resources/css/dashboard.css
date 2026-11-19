@@ -1,23 +1,35 @@
 /* Admin dashboard layout. Widgets are matched via Livewire's wire:name, which Filament sets to the
    full widget class name (backslashes doubled inside CSS strings).
-   Structure: dashboard grid > column wrapper > widget. */
+   Structure: dashboard grid > column wrapper (display: contents) > widget. The widget is the grid item,
+   so spans go on the widget itself, not on the wrapper. */
+
+/* Pelican's update, "Support Pelican" and "Need help?" widgets come first. */
+.fi-sc > * > :is([wire\:name$="Admin\\Widgets\\UpdateWidget"], [wire\:name$="Admin\\Widgets\\SupportWidget"], [wire\:name$="Admin\\Widgets\\HelpWidget"]) {
+    order: -1;
+}
 
 @media (min-width: 768px) {
-    /* Two columns; every widget spans both unless set to half width (rules added by the plugin). */
+    /* Six columns: full = all six, half = three (rules added by the plugin), top row = two each. */
     .fi-sc:has(> * > [wire\:name$="Admin\\Widgets\\SupportWidget"]) {
         display: grid !important;
-        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
         gap: 1.5rem;
-        align-items: start;
     }
 
-    .fi-sc:has(> * > [wire\:name$="Admin\\Widgets\\SupportWidget"]) > * {
+    /* Grid items stretch to the row height; the card inside grows with them, so a row has no gaps. */
+    .fi-sc:has(> * > [wire\:name$="Admin\\Widgets\\SupportWidget"]) > * > * {
         grid-column: 1 / -1 !important;
+        display: flex;
+        flex-direction: column;
     }
 
-    /* Pelican's "Support Pelican" + "Need help?": always side by side at the bottom. */
-    .fi-sc > :has(> :is([wire\:name$="Admin\\Widgets\\SupportWidget"], [wire\:name$="Admin\\Widgets\\HelpWidget"])) {
-        grid-column: auto !important;
+    /* First child only: form widgets also render an action modals container after their card. */
+    .fi-sc:has(> * > [wire\:name$="Admin\\Widgets\\SupportWidget"]) > * > * > :first-child {
+        flex: 1;
+    }
+
+    .fi-sc > * > :is([wire\:name$="Admin\\Widgets\\UpdateWidget"], [wire\:name$="Admin\\Widgets\\SupportWidget"], [wire\:name$="Admin\\Widgets\\HelpWidget"]) {
+        grid-column: span 2 !important;
     }
 }
 
