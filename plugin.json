@@ -6,7 +6,7 @@
     "description": "Extra admin dashboard widgets, a custom heading and header links.",
     "category": "plugin",
     "url": null,
-    "update_url": null,
+    "update_url": "https://hub.pelican.dev/plugins/dashboard-widgets/update.json",
     "namespace": "ShuraBlack\\DashboardWidgets",
     "class": "DashboardWidgetsPlugin",
     "panels": ["admin"],
