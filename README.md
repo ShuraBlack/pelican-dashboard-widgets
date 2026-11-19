@@ -1,4 +1,7 @@
 # Dashboard Widgets
+<img width="662" height="360" alt="Overview" src="https://github.com/user-attachments/assets/f6aecbee-05ca-4bed-b40a-78f9a47009b5" />
+
+<img width="2560" height="1277" alt="Page-dashboard" src="https://github.com/user-attachments/assets/72bfe2fc-2c58-41ac-85d5-732dd0a89e19" />
 
 Extra widgets for the Pelican admin dashboard, a custom heading, header links and a configurable layout.
 
